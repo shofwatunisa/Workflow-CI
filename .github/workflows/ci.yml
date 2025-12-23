@@ -1,32 +1,33 @@
-name: CI
+name: ML CI Workflow
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build:
+  train-model:
     runs-on: ubuntu-latest
+
+    env:                     # ⬅️ DI SINI LETAKNYA
+      MLFLOW_MODE: dagshub
+      DMLFLOW_TRACKING_TOKEN: ${{ secrets.DAGSHUB_MLFLOW_TOKEN }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.12.7
+          python-version: "3.12.7"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install dagshub mlflow scikit-learn pandas matplotlib seaborn joblib
+          pip install -r MLProject/requirements.txt || \
+          pip install mlflow dagshub scikit-learn pandas matplotlib seaborn joblib
 
-      - name: Set MLflow Tracking URI
-        run: echo "MLFLOW_MODE=dagshub" >> $GITHUB_ENV
-
-      - name: Run MLflow Project
-        run: python MLProject/modelling.py
+      - name: Run training
+        run: |
+          python MLProject/modelling.py
