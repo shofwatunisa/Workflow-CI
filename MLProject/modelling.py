@@ -17,12 +17,7 @@ from mlflow.models.signature import infer_signature
 MODE = os.getenv("MLFLOW_MODE", "local")
 TOKEN = os.getenv("DMLFLOW_TRACKING_TOKEN")  
 
-if MODE == "dagshub":
-    mlflow.set_tracking_uri("https://dagshub.com/shofwatunisa/Workflow-CI.mlflow")
-    os.environ["DMLFLOW_TRACKING_TOKEN"] = TOKEN
-else:
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
-
+print("MLFLOW_TRACKING_URI:", mlflow.get_tracking_uri())
 print("MLFLOW_MODE:", MODE)
 print("Tracking URI:", mlflow.get_tracking_uri())
 
