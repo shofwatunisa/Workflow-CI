@@ -9,9 +9,10 @@ jobs:
   train-model:
     runs-on: ubuntu-latest
 
-    env:                     # ⬅️ DI SINI LETAKNYA
-      MLFLOW_MODE: dagshub
-      DMLFLOW_TRACKING_TOKEN: ${{ secrets.DAGSHUB_MLFLOW_TOKEN }}
+    env:                    
+    MLFLOW_TRACKING_URI: https://dagshub.com/shofwatunisa/Workflow-CI.mlflow
+    MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+    MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
 
     steps:
       - name: Checkout repo
