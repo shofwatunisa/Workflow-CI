@@ -1,0 +1,11 @@
+name: text_emotion_classification
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      data_path: {type: str, default: "text_emotion_preprocessing/text_emotion_clean.csv"}
+      max_features: {type: int, default: 5000}
+      max_iter: {type: int, default: 1000}
+    command: "python modelling.py --data_path {data_path} --max_features {max_features} --max_iter {max_iter}"
