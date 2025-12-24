@@ -1,75 +1,78 @@
-import argparse
 import os
+import argparse
 import pandas as pd
 import mlflow
 import mlflow.sklearn
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
-from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report, accuracy_score
+import matplotlib.pyplot as plt
 
 # =========================
-# Argument parser
+# Argument Parser
 # =========================
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset_path", type=str, required=True)
-parser.add_argument("--random_state", type=int, default=42)
+parser.add_argument(
+    "--dataset_path",
+    type=str,
+    default="text_emotion_preprocessing/text_emotion_clean.csv"
+)
 args = parser.parse_args()
 
 # =========================
-# Load dataset
+# Load Dataset
 # =========================
 df = pd.read_csv(args.dataset_path)
 
-X = df["clean_text"]      
-y = df["label_encoded"]     
+X = df["clean_text"]
+y = df["label_encoded"]
 
-# =========================
-# Train-test split
-# =========================
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=args.random_state, stratify=y
+    X, y, test_size=0.2, random_state=42, stratify=y
 )
 
 # =========================
-# ML Pipeline
+# Feature Engineering
 # =========================
-pipeline = Pipeline([
-    ("tfidf", TfidfVectorizer(max_features=5000)),
-    ("clf", LogisticRegression(max_iter=500))
-])
+vectorizer = TfidfVectorizer(max_features=5000)
+X_train_vec = vectorizer.fit_transform(X_train)
+X_test_vec = vectorizer.transform(X_test)
 
 # =========================
-# MLflow Tracking
+# Train Model (MLflow)
 # =========================
 with mlflow.start_run(run_name="Text Emotion Classification"):
-    pipeline.fit(X_train, y_train)
 
-    y_pred = pipeline.predict(X_test)
+    model = LogisticRegression(max_iter=500)
+    model.fit(X_train_vec, y_train)
 
+    # Evaluation
+    y_pred = model.predict(X_test_vec)
     acc = accuracy_score(y_test, y_pred)
-    precision, recall, f1, _ = precision_recall_fscore_support(
-        y_test, y_pred, average="weighted"
-    )
 
-    # ---- log metrics
+    # Log params & metrics
+    mlflow.log_param("model_type", "LogisticRegression")
+    mlflow.log_param("max_features", 5000)
     mlflow.log_metric("accuracy", acc)
-    mlflow.log_metric("precision", precision)
-    mlflow.log_metric("recall", recall)
-    mlflow.log_metric("f1_score", f1)
 
-    # ---- save report
+    # Classification report
     report = classification_report(y_test, y_pred)
     with open("classification_report.txt", "w") as f:
         f.write(report)
-
     mlflow.log_artifact("classification_report.txt")
 
-    # ---- log model (INI YANG KEMARIN HILANG)
+    # Confusion matrix
+    from sklearn.metrics import ConfusionMatrixDisplay
+    ConfusionMatrixDisplay.from_predictions(y_test, y_pred)
+    plt.savefig("training_confusion_matrix.png")
+    mlflow.log_artifact("training_confusion_matrix.png")
+    plt.close()
+
     mlflow.sklearn.log_model(
-        pipeline,
-        artifact_path="model"
+        sk_model=model,
+        artifact_path="model",
+        registered_model_name="TextEmotionModel"
     )
 
-print("TRAINING SELESAI & MODEL TERSIMPAN DI MLflow")
+print("Training selesai & model tercatat di MLflow")
