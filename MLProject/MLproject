@@ -3,5 +3,5 @@ conda_env: conda.yaml
 entry_points:
   main:
     parameters:
-      dataset_path: {type: str, default: "namadataset_preprocessing/text_emotion_clean.csv"}
+      dataset_path: {type: str, default: "text_emotion_preprocessing/text_emotion_clean.csv"}
     command: "python modelling.py --dataset_path {dataset_path}"
