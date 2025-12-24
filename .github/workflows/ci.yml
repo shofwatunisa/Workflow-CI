@@ -34,7 +34,8 @@ jobs:
         run: |
           conda run -n text_emotion_env mlflow run MLProject \
             -P dataset_path=text_emotion_preprocessing/text_emotion_clean.csv \
-            -P target_column=label
+            -P target_column=label_encoded
+
      
        
       
