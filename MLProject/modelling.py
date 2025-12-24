@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report
 
 # =========================
-# Argument Parser (WAJIB SAMA DENGAN CI)
+# Argument Parser 
 # =========================
 parser = argparse.ArgumentParser(description="Text Emotion Classification")
 parser.add_argument(
@@ -32,6 +32,8 @@ args = parser.parse_args()
 # Load Dataset
 # =========================
 df = pd.read_csv(args.dataset_path)
+
+df = df.dropna(subset=["clean_text", args.target_column])
 
 X = df["clean_text"]
 y = df[args.target_column]
@@ -65,7 +67,7 @@ accuracy = accuracy_score(y_test, y_pred)
 print(classification_report(y_test, y_pred))
 
 # =========================
-# MLflow Logging (INI YANG DULU HILANG)
+# MLflow Logging 
 # =========================
 mlflow.log_metric("accuracy", accuracy)
 
@@ -75,4 +77,4 @@ mlflow.sklearn.log_model(
     input_example=X_test[:5],
 )
 
-print("✅ Training & MLflow logging SUCCESS")
+print("Training & MLflow logging SUCCESS")
