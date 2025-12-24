@@ -1,13 +1,14 @@
-name: text_emotion_ml
+name: text_emotion_env
 channels:
   - defaults
 dependencies:
   - python=3.12
   - pip
+  - pandas
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - joblib
+  - mlflow
   - pip:
-      - pandas
-      - scikit-learn
-      - mlflow
-      - matplotlib
-      - seaborn
-      - joblib
+      - dagshub
