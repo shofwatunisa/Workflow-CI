@@ -15,7 +15,6 @@ parser.add_argument(
     "--dataset_path",
     type=str,
     default="MLProject/text_emotion_preprocessing/text_emotion_clean.csv",  
-    required=True,
     help="Path to the cleaned dataset CSV file"
 )
 parser.add_argument(
