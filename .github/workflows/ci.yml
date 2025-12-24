@@ -33,5 +33,9 @@ jobs:
       - name: Run MLflow Project (CI Retraining)
         run: |
           conda run -n text_emotion_env mlflow run MLProject \
-            -P dataset_path=MLProject/text_emotion_preprocessing/text_emotion_clean.csv \
+            -P dataset_path=text_emotion_preprocessing/text_emotion_clean.csv \
             -P target_column=label
+     
+       
+      
+          
