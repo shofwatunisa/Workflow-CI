@@ -2,15 +2,18 @@ name: MLflow CI - Text Emotion Classification
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   run-mlflow-project:
     runs-on: ubuntu-latest
+
+    env:
+      MLFLOW_TRACKING_URI: https://dagshub.com/shofwatunisa/TextEmotion_Online.mlflow
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
 
     steps:
       - name: Checkout repository
@@ -20,18 +23,15 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           environment-file: MLProject/conda.yaml
-          auto-activate-base: true
           activate-environment: text_emotion_env
+          auto-activate-base: false
 
-      - name: List files
-        run: ls -R
-
-      - name: Run MLflow Project
+      - name: Install MLflow & DagsHub
         run: |
-          conda run -n text_emotion_env python MLProject/modelling.py
+          conda run -n text_emotion_env pip install mlflow dagshub
 
-      - name: Upload MLflow artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlruns
-          path: MLProject/mlruns
+      - name: Run MLflow Project (CI Retraining)
+        run: |
+          conda run -n text_emotion_env mlflow run MLProject \
+            -P dataset_path=MLProject/text_emotion_preprocessing/text_emotion_clean.csv \
+            -P target_column=label
