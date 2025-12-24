@@ -13,35 +13,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    # Checkout repo
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      # Setup Miniconda
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          auto-activate-base: false
-          environment-file: MLProject/conda.yaml
+    # Setup Miniconda
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        environment-file: MLProject/conda.yaml
+        auto-activate-base: false
 
-      # Install additional packages if needed (TensorFlow/PyTorch)
-      - name: Install TensorFlow & PyTorch
-        run: |
-          pip install tensorflow torch
+    # Debug: cek file & folder
+    - name: List files
+      run: ls -R
 
-      # Debug: cek file & folder
-      - name: List files
-        run: ls -R
+    # Aktifkan environment
+    - name: Activate Conda environment
+      run: conda activate text_emotion_env
 
-      # Jalankan MLflow Project
-      - name: Run MLflow Project
-        run: |
-          mlflow run MLProject \
-            -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
+    # Install MLflow (versi sesuai ketentuan)
+    - name: Install MLflow
+      run: pip install mlflow==2.19.0
 
-      # Upload MLflow artifacts ke GitHub Actions
-      - name: Upload MLflow artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlruns
-          path: MLProject/mlruns
+    # Jalankan MLflow Project
+    - name: Run MLflow Project
+      run: |
+        mlflow run MLProject \
+          -P dataset_path=MLProject/text_emotion_preprocessing/text_emotion_clean.csv
+
+    # Upload MLflow artifacts
+    - name: Upload MLflow artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mlruns
+        path: MLProject/mlruns
