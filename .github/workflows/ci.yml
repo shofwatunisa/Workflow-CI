@@ -1,4 +1,4 @@
-name: CI MLflow Project
+name: CI MLflow Project 
 
 on:
   push:
@@ -23,20 +23,30 @@ jobs:
         auto-update-conda: true
         python-version: 3.12
 
-    - name: Create conda env
+    - name: Create Conda environment
       run: conda env create -f MLProject/conda.yaml
 
-    - name: Activate conda env
-      run: |
-        conda init bash
-        source ~/.bashrc
-        conda activate text_emotion_env
-
-    - name: Set MLflow credentials
+    - name: Run MLflow Project
+      shell: bash
       env:
         MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-      run: echo "MLflow credentials set"
+      run: |
+        source ~/miniconda3/etc/profile.d/conda.sh
+        conda activate text_emotion_env
+        # Jalankan training MLflow Project
+        mlflow run MLProject --experiment-name "TextEmotion_CI"
 
-    - name: Run MLflow Project
-      run: mlflow run MLProject --experiment-name "TextEmotion_CI"
+    - name: Upload MLflow artefacts to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "mlflow-ci-artefacts"
+        name: "MLflow Artefacts"
+        body: "Artefacts hasil training MLflow Project"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        mkdir -p release_artifacts
+        cp MLProject/best_model.pkl release_artifacts/
+        cp MLProject/confusion_matrix.png release_artifacts/
+        cp MLProject/classification_report.txt release_artifacts/
