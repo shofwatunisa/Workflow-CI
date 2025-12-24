@@ -14,24 +14,32 @@ parser = argparse.ArgumentParser(description="Text Emotion Classification Traini
 parser.add_argument(
     "--dataset_path",
     type=str,
-    default="MLProject/text_emotion_preprocessing/text_emotion_clean.csv",  
+    default="MLProject/text_emotion_preprocessing/text_emotion_clean.csv",
     help="Path to the cleaned dataset CSV file"
+)
+parser.add_argument(
+    "--text_column",
+    type=str,
+    default="clean_text",
+    help="Name of the text column"
 )
 parser.add_argument(
     "--target_column",
     type=str,
-    default="clean_text",
-    help="Name of the target column in dataset",
+    default="label_encoded",
+    help="Name of the target column"
 )
 parser.add_argument(
     "--random_state",
     type=int,
     default=42,
-    help="Random seed for reproducibility",
+    help="Random seed"
 )
+
 args = parser.parse_args()
 
 dataset_path = args.dataset_path
+text_column = args.text_column
 target_column = args.target_column
 random_state = args.random_state
 
@@ -44,29 +52,32 @@ if not os.path.exists(dataset_path):
 df = pd.read_csv(dataset_path)
 
 # ----------------------------
-# Handle missing values
+# Validate columns
 # ----------------------------
-if df.isna().sum().sum() > 0:
-    print("Found missing values. Dropping rows with NaN...")
-    df = df.dropna(subset=[target_column, 'text'])  # pastikan kolom text dan target tidak NaN
+for col in [text_column, target_column]:
+    if col not in df.columns:
+        raise KeyError(f"Column '{col}' not found in dataset. Available columns: {list(df.columns)}")
 
 # ----------------------------
-# Check target column
+# Handle missing values
 # ----------------------------
-if target_column not in df.columns:
-    raise KeyError(f"Target column '{target_column}' not found in dataset columns.")
+df = df.dropna(subset=[text_column, target_column])
 
 # ----------------------------
 # Prepare features & labels
 # ----------------------------
-X = df['text']
+X = df[text_column]
 y = df[target_column]
 
 # ----------------------------
 # Train-test split
 # ----------------------------
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=random_state, stratify=y
+    X,
+    y,
+    test_size=0.2,
+    random_state=random_state,
+    stratify=y
 )
 
 # ----------------------------
@@ -83,11 +94,11 @@ model = LogisticRegression(max_iter=500, random_state=random_state)
 model.fit(X_train_tfidf, y_train)
 
 # ----------------------------
-# Evaluate model
+# Evaluation
 # ----------------------------
 y_pred = model.predict(X_test_tfidf)
-report = classification_report(y_test, y_pred)
-print("Classification Report:\n", report)
+print("Classification Report:\n")
+print(classification_report(y_test, y_pred))
 
 # ----------------------------
 # Save artifacts
@@ -96,4 +107,4 @@ os.makedirs("artifacts", exist_ok=True)
 joblib.dump(model, "artifacts/text_emotion_model.pkl")
 joblib.dump(vectorizer, "artifacts/tfidf_vectorizer.pkl")
 
-print("Training complete. Model and vectorizer saved in 'artifacts/' folder.")
+print("Training SUCCESS. Artifacts saved.")
