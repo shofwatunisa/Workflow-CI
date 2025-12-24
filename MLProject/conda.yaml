@@ -1,14 +1,18 @@
 name: text_emotion_env
 channels:
   - defaults
+  - conda-forge
 dependencies:
   - python=3.12
-  - pandas
-  - scikit-learn
-  - mlflow
-  - matplotlib
-  - seaborn
-  - joblib
   - pip
   - pip:
-      - dagshub
+      - mlflow==3.8.0
+      - scikit-learn==1.6.1
+      - pandas==2.2.2
+      - numpy==2.0.2
+      - matplotlib==3.10.0
+      - seaborn==1.2.2
+      - joblib==1.5.3
+      - scipy==1.16.3
+      - pyarrow==18.1.0
+      - python-dotenv==1.2.1
