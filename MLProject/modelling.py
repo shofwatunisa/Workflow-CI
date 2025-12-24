@@ -1,90 +1,70 @@
-import os
+import argparse
+import mlflow
+import mlflow.sklearn
 import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, f1_score, confusion_matrix, classification_report
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, confusion_matrix
 
-import mlflow
-import mlflow.sklearn
-from mlflow.models.signature import infer_signature
+# Argument parser
+parser = argparse.ArgumentParser()
+parser.add_argument('--test_size', type=float, default=0.2)
+parser.add_argument('--random_state', type=int, default=42)
+args = parser.parse_args()
 
+# Load dataset
+df = pd.read_csv("dataset/text_emotion_clean.csv")
+df = df.dropna(subset=['clean_text', 'label_encoded'])
 
-MODE = os.getenv("MLFLOW_MODE", "local")
-TOKEN = os.getenv("DMLFLOW_TRACKING_TOKEN")  
+# TF-IDF
+vectorizer = TfidfVectorizer(max_features=5000)
+X = vectorizer.fit_transform(df['clean_text'])
+y = df['label_encoded']
 
-print("MLFLOW_TRACKING_URI:", mlflow.get_tracking_uri())
-print("MLFLOW_MODE:", MODE)
-print("Tracking URI:", mlflow.get_tracking_uri())
+# Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=args.test_size, random_state=args.random_state)
 
-experiment_name = "Text Emotion Classification"
-client = mlflow.tracking.MlflowClient()
+# Hyperparameter tuning
+param_grid = {
+    "n_estimators": [50, 100],
+    "max_depth": [5, 10],
+    "min_samples_split": [2, 5],
+    "min_samples_leaf": [1, 2]
+}
+rf = RandomForestClassifier(random_state=args.random_state)
+grid_search = GridSearchCV(rf, param_grid, cv=3, scoring='accuracy', n_jobs=-1, verbose=1)
 
-if client.get_experiment_by_name(experiment_name) is None:
-    client.create_experiment(experiment_name)
-    print(f"Experiment '{experiment_name}' created on {MODE}")
-else:
-    print(f"Experiment '{experiment_name}' exists on {MODE}")
-
-mlflow.set_experiment(experiment_name)
-
-df = pd.read_csv("MLProject/text_emotion_preprocessing/text_emotion_clean.csv")
-X = df["clean_text"].fillna("")
-y = df["label_encoded"]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# MLflow tracking
+mlflow.set_experiment("TextEmotion_CI")
 
 with mlflow.start_run():
+    grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
 
-    max_features = 5000
-    max_iter = 1000
-
-    # Params
-    mlflow.log_param("vectorizer", "TF-IDF")
-    mlflow.log_param("max_features", max_features)
-    mlflow.log_param("model", "LogisticRegression")
-    mlflow.log_param("max_iter", max_iter)
-
-    # Vectorizer
-    vectorizer = TfidfVectorizer(max_features=max_features)
-    X_train_vec = vectorizer.fit_transform(X_train)
-    X_test_vec = vectorizer.transform(X_test)
-
-    # Model
-    model = LogisticRegression(max_iter=max_iter)
-    model.fit(X_train_vec, y_train)
-
-    # Predict & metrics
-    y_pred = model.predict(X_test_vec)
+    # Log metrics
+    mlflow.log_params(grid_search.best_params_)
     mlflow.log_metric("accuracy", accuracy_score(y_test, y_pred))
-    mlflow.log_metric("f1_score", f1_score(y_test, y_pred, average="weighted"))
-    mlflow.log_metric("precision", precision_score(y_test, y_pred, average="weighted"))
-    mlflow.log_metric("recall", recall_score(y_test, y_pred, average="weighted"))
+    mlflow.log_metric("f1_score", f1_score(y_test, y_pred, average='weighted'))
 
-    # Log model with signature
-    signature = infer_signature(X_train_vec, model.predict(X_train_vec))
-    mlflow.sklearn.log_model(model, artifact_path="model", signature=signature, input_example=X_train_vec[:5])
+    # Artefak
+    joblib.dump(best_model, "best_model.pkl")
+    mlflow.log_artifact("best_model.pkl")
 
-    # Log vectorizer
-    joblib.dump(vectorizer, "tfidf_vectorizer.pkl")
-    mlflow.log_artifact("tfidf_vectorizer.pkl")
-
-    # Log sample data
-    sample_df = df.sample(100)
-    sample_df.to_csv("sample_data.csv", index=False)
-    mlflow.log_artifact("sample_data.csv")
-
-    # Confusion matrix
     cm = confusion_matrix(y_test, y_pred)
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(8,6))
     sns.heatmap(cm, annot=True, fmt="d")
     plt.title("Confusion Matrix")
     plt.savefig("confusion_matrix.png")
-    plt.close()
     mlflow.log_artifact("confusion_matrix.png")
 
-    print("Training SUCCESS - BASE MODEL")
+    with open("classification_report.txt", "w") as f:
+        f.write(classification_report(y_test, y_pred))
+    mlflow.log_artifact("classification_report.txt")
+
+    print(f"Best params: {grid_search.best_params_}")
+    print(f"Accuracy: {accuracy_score(y_test, y_pred):.4f}, F1 Score: {f1_score(y_test, y_pred, average='weighted'):.4f}")
