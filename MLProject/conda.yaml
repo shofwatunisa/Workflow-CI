@@ -11,8 +11,8 @@ dependencies:
       - pandas==2.2.2
       - numpy==2.0.2
       - matplotlib==3.10.0
-      - seaborn==1.2.2
-      - joblib==1.5.3
-      - scipy==1.16.3
-      - pyarrow==18.1.0
-      - python-dotenv==1.2.1
+      - seaborn==0.13.2  # versi terbaru compatible dengan Python 3.12
+      - joblib
+      - scipy
+      - tensorflow
+      - torch
