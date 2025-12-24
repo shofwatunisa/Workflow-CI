@@ -17,7 +17,7 @@ parser.add_argument('--random_state', type=int, default=42)
 args = parser.parse_args()
 
 # Load dataset
-df = pd.read_csv("dataset/text_emotion_clean.csv")
+df = pd.read_csv("MLProject/text_emotion_preprocessing/text_emotion_clean.csv")
 df = df.dropna(subset=['clean_text', 'label_encoded'])
 
 # TF-IDF
