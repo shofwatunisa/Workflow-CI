@@ -1,122 +1,78 @@
 import argparse
-import os
 import pandas as pd
 import mlflow
 import mlflow.sklearn
-
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report, accuracy_score
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 
+def main(args):
+    # =====================
+    # Load dataset
+    # =====================
+    df = pd.read_csv(args.dataset_path)
 
-# =========================
-# Argument Parser
-# =========================
-parser = argparse.ArgumentParser(description="Text Emotion Classification Training with MLflow")
+    X = df["text"]
+    y = df[args.target_column]
 
-parser.add_argument(
-    "--dataset_path",
-    type=str,
-    default="MLProject/text_emotion_preprocessing/text_emotion_clean.csv",
-    help="Path to cleaned dataset"
-)
-
-parser.add_argument(
-    "--text_column",
-    type=str,
-    default="clean_text",
-    help="Text column name"
-)
-
-parser.add_argument(
-    "--target_column",
-    type=str,
-    default="label_encoded",
-    help="Target column name"
-)
-
-parser.add_argument(
-    "--random_state",
-    type=int,
-    default=42,
-    help="Random state"
-)
-
-args = parser.parse_args()
-
-
-# =========================
-# Load Dataset
-# =========================
-if not os.path.exists(args.dataset_path):
-    raise FileNotFoundError(f"Dataset not found: {args.dataset_path}")
-
-df = pd.read_csv(args.dataset_path)
-
-for col in [args.text_column, args.target_column]:
-    if col not in df.columns:
-        raise KeyError(f"Column '{col}' not found. Available: {list(df.columns)}")
-
-df = df.dropna(subset=[args.text_column, args.target_column])
-
-X = df[args.text_column]
-y = df[args.target_column]
-
-
-# =========================
-# Train Test Split
-# =========================
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=args.random_state,
-    stratify=y
-)
-
-
-# =========================
-# MLflow Experiment
-# =========================
-mlflow.set_experiment("Text Emotion Classification")
-
-with mlflow.start_run():
-
-    # TF-IDF
-    vectorizer = TfidfVectorizer(max_features=5000)
-    X_train_tfidf = vectorizer.fit_transform(X_train)
-    X_test_tfidf = vectorizer.transform(X_test)
-
-    # Model
-    model = LogisticRegression(max_iter=500, random_state=args.random_state)
-    model.fit(X_train_tfidf, y_train)
-
-    # Evaluation
-    y_pred = model.predict(X_test_tfidf)
-    acc = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred)
-
-    print("Accuracy:", acc)
-    print(report)
-
-    # =========================
-    # MLflow Logging (WAJIB)
-    # =========================
-    mlflow.log_param("model", "LogisticRegression")
-    mlflow.log_param("max_iter", 500)
-    mlflow.log_param("vectorizer", "TF-IDF")
-    mlflow.log_metric("accuracy", acc)
-
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model"
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
     )
 
-    # Simpan report
+    # =====================
+    # Pipeline
+    # =====================
+    pipeline = Pipeline([
+        ("tfidf", TfidfVectorizer(max_features=5000)),
+        ("clf", LogisticRegression(max_iter=1000))
+    ])
+
+    # =====================
+    # Train
+    # =====================
+    pipeline.fit(X_train, y_train)
+
+    # =====================
+    # Evaluation
+    # =====================
+    y_pred = pipeline.predict(X_test)
+
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, average="weighted", zero_division=0)
+    rec = recall_score(y_test, y_pred, average="weighted", zero_division=0)
+    f1 = f1_score(y_test, y_pred, average="weighted", zero_division=0)
+
+    # =====================
+    # LOG METRICS (WAJIB)
+    # =====================
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("precision", prec)
+    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("f1_score", f1)
+
+    # =====================
+    # LOG ARTIFACT REPORT
+    # =====================
+    report = classification_report(y_test, y_pred)
     with open("classification_report.txt", "w") as f:
         f.write(report)
 
     mlflow.log_artifact("classification_report.txt")
 
-print("TRAINING SELESAI. MODEL TERCATAT DI MLflow.")
+
+    mlflow.sklearn.log_model(
+        sk_model=pipeline,
+        artifact_path="model"
+    )
+
+    print("Training & logging finished successfully.")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset_path", type=str, required=True)
+    parser.add_argument("--target_column", type=str, default="label_encoded")
+    args = parser.parse_args()
+
+    main(args)
