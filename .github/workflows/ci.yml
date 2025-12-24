@@ -13,30 +13,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Setup Conda environment
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        environment-file: MLProject/conda.yaml
-        auto-activate-base: true
+      # Setup Miniconda
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-activate-base: false
+          environment-file: MLProject/conda.yaml
 
-    # Debug: lihat file & folder
-    - name: List files
-      run: ls -R
+      # Install additional packages if needed (TensorFlow/PyTorch)
+      - name: Install TensorFlow & PyTorch
+        run: |
+          pip install tensorflow torch
 
-    # Jalankan MLflow Project
-    - name: Run MLflow Project
-      run: |
-        mlflow run MLProject \
-          -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
+      # Debug: cek file & folder
+      - name: List files
+        run: ls -R
 
-    # Upload MLflow artifacts
-    - name: Upload MLflow artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: mlruns
-        path: MLProject/mlruns
+      # Jalankan MLflow Project
+      - name: Run MLflow Project
+        run: |
+          mlflow run MLProject \
+            -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
+
+      # Upload MLflow artifacts ke GitHub Actions
+      - name: Upload MLflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns
+          path: MLProject/mlruns
