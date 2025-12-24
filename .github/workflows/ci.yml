@@ -17,7 +17,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # Setup Miniconda
+    # Setup Conda environment
     - name: Setup Miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -27,10 +27,6 @@ jobs:
     # Debug: lihat file & folder
     - name: List files
       run: ls -R
-
-    # Install MLflow (opsional jika conda.yaml sudah ada mlflow)
-    - name: Install MLflow
-      run: pip install mlflow==3.8.0
 
     # Jalankan MLflow Project
     - name: Run MLflow Project
