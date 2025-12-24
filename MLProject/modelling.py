@@ -20,7 +20,7 @@ parser.add_argument(
 parser.add_argument(
     "--target_column",
     type=str,
-    default="label",
+    default="clean_text",
     help="Name of the target column"
 )
 parser.add_argument(
