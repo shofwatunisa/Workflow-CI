@@ -13,31 +13,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Setup Miniconda & create environment dari conda.yaml
-    - name: Setup Miniconda
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        environment-file: MLProject/conda.yaml
-        auto-activate-base: true
-        activate-environment: text_emotion_env
+      # Setup Miniconda & create environment
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: MLProject/conda.yaml
+          auto-activate-base: true
+          activate-environment: text_emotion_env
 
-    # Debug: cek file & folder
-    - name: List files
-      run: ls -R
+      # Debug: cek file & folder
+      - name: List files
+        run: ls -R
 
-    # Jalankan MLflow Project (environment sudah otomatis aktif)
-    - name: Run MLflow Project
-      run: |
-        mlflow run MLProject \
-          -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
+      # Jalankan MLflow Project di environment Conda
+      - name: Run MLflow Project
+        run: |
+          conda run -n text_emotion_env mlflow run MLProject \
+            -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
 
-    # Upload MLflow artifacts
-    - name: Upload MLflow artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: mlruns
-        path: MLProject/mlruns
+      # Upload MLflow artifacts
+      - name: Upload MLflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns
+          path: MLProject/mlruns
