@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="Text Emotion Classification")
 parser.add_argument(
     "--dataset_path",
     type=str,
-    default="MLProject/text_emotion_processing/text_emotion_clean.csv",  # default dataset path
+    default="MLProject/text_emotion_preprocessing/text_emotion_clean.csv",  # default dataset path
     help="Path to the cleaned dataset CSV file"
 )
 parser.add_argument(
