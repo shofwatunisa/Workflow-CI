@@ -74,8 +74,6 @@ X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
 
 
-mlflow.set_experiment("Text Emotion Classification")
-
 # log parameters
 mlflow.log_param("model", "LogisticRegression")
 mlflow.log_param("max_features", 5000)
