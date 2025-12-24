@@ -1,57 +1,90 @@
-import mlflow
-import mlflow.sklearn
+# modelling.py
 import pandas as pd
+import numpy as np
+import argparse
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report
+import mlflow
+import mlflow.sklearn
 import os
 
-# ==========================
-# Set MLflow tracking URI lokal
-# ==========================
-mlruns_path = os.path.join(os.path.dirname(__file__), "mlruns")
-os.makedirs(mlruns_path, exist_ok=True)
-mlflow.set_tracking_uri(mlruns_path)
+# -------------------------
+# Argument Parser
+# -------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset_path", type=str, required=True, help="Path ke CSV dataset")
+parser.add_argument("--target_column", type=str, default="label", help="Nama kolom target")
+parser.add_argument("--random_state", type=int, default=42, help="Random state untuk reproducibility")
+args = parser.parse_args()
 
-# ==========================
-# Set atau buat experiment
-# ==========================
-experiment_name = "TextEmotion_CI"
-mlflow.set_experiment(experiment_name)
+dataset_path = args.dataset_path
+target_column = args.target_column
+random_state = args.random_state
 
-# ==========================
-# Load dataset
-# ==========================
-dataset_path = os.path.join(os.path.dirname(__file__), "text_emotion_preprocessing", "text_emotion_clean.csv")
+# -------------------------
+# Load Dataset
+# -------------------------
+if not os.path.exists(dataset_path):
+    raise FileNotFoundError(f"Dataset tidak ditemukan di path: {dataset_path}")
+
 df = pd.read_csv(dataset_path)
+print("Dataset loaded:", df.shape)
+print("Columns:", df.columns.tolist())
 
-X = df.drop("label", axis=1)
-y = df["label"]
+if target_column not in df.columns:
+    raise ValueError(f"Kolom target '{target_column}' tidak ditemukan di dataset")
 
-# ==========================
-# Split data
-# ==========================
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X = df.drop(target_column, axis=1)
+y = df[target_column]
 
-# ==========================
-# Train model
-# ==========================
-model = RandomForestClassifier(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
+# -------------------------
+# Split Dataset
+# -------------------------
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=random_state, stratify=y
+)
 
-# ==========================
-# Predict & metric
-# ==========================
-preds = model.predict(X_test)
-acc = accuracy_score(y_test, preds)
+# -------------------------
+# MLflow Experiment
+# -------------------------
+mlflow.set_experiment("TextEmotion_CI")
 
-# ==========================
-# Log params, metrics & model ke MLflow
-# ==========================
 with mlflow.start_run():
-    mlflow.log_param("n_estimators", 100)
-    mlflow.log_metric("accuracy", acc)
-    mlflow.sklearn.log_model(model, "model")
+    # -------------------------
+    # Train Model
+    # -------------------------
+    clf = RandomForestClassifier(random_state=random_state)
+    clf.fit(X_train, y_train)
+    
+    # -------------------------
+    # Evaluate
+    # -------------------------
+    y_pred = clf.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Accuracy: {acc:.4f}")
+    
+    report = classification_report(y_test, y_pred, output_dict=True)
+    print("Classification Report:", report)
 
-print(f"Training selesai, accuracy={acc}")
-print(f"MLflow run tersimpan di {mlruns_path}")
+    # -------------------------
+    # Log Metrics & Model
+    # -------------------------
+    mlflow.log_metric("accuracy", acc)
+    
+    # Log per-class f1-score
+    for label, metrics in report.items():
+        if label not in ["accuracy", "macro avg", "weighted avg"]:
+            mlflow.log_metric(f"f1_{label}", metrics["f1-score"])
+
+    # Log Model
+    mlflow.sklearn.log_model(clf, artifact_path="model")
+    
+    # Save test set as artifact
+    test_df = X_test.copy()
+    test_df[target_column] = y_test
+    test_csv_path = "test_dataset.csv"
+    test_df.to_csv(test_csv_path, index=False)
+    mlflow.log_artifact(test_csv_path)
+    
+print("MLflow run completed successfully!")
