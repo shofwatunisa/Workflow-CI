@@ -73,44 +73,41 @@ vectorizer = TfidfVectorizer(max_features=5000)
 X_train_tfidf = vectorizer.fit_transform(X_train)
 X_test_tfidf = vectorizer.transform(X_test)
 
-# ----------------------------
-# MLflow Tracking (INI KUNCI KRITERIA 3)
-# ----------------------------
+
 mlflow.set_experiment("Text Emotion Classification")
 
-with mlflow.start_run(run_name="ci-training-run"):
-    # log parameters
-    mlflow.log_param("model", "LogisticRegression")
-    mlflow.log_param("max_features", 5000)
-    mlflow.log_param("random_state", args.random_state)
+# log parameters
+mlflow.log_param("model", "LogisticRegression")
+mlflow.log_param("max_features", 5000)
+mlflow.log_param("random_state", args.random_state)
 
-    # train model
-    model = LogisticRegression(max_iter=500, random_state=args.random_state)
-    model.fit(X_train_tfidf, y_train)
+# train model
+model = LogisticRegression(max_iter=500, random_state=args.random_state)
+model.fit(X_train_tfidf, y_train)
 
-    # evaluation
-    y_pred = model.predict(X_test_tfidf)
-    acc = accuracy_score(y_test, y_pred)
+# evaluation
+y_pred = model.predict(X_test_tfidf)
+acc = accuracy_score(y_test, y_pred)
 
-    mlflow.log_metric("accuracy", acc)
+mlflow.log_metric("accuracy", acc)
 
-    # save artifacts
-    os.makedirs("artifacts", exist_ok=True)
+# save artifacts
+os.makedirs("artifacts", exist_ok=True)
 
-    model_path = "artifacts/text_emotion_model.pkl"
-    vectorizer_path = "artifacts/tfidf_vectorizer.pkl"
-    report_path = "artifacts/classification_report.txt"
+model_path = "artifacts/text_emotion_model.pkl"
+vectorizer_path = "artifacts/tfidf_vectorizer.pkl"
+report_path = "artifacts/classification_report.txt"
 
-    joblib.dump(model, model_path)
-    joblib.dump(vectorizer, vectorizer_path)
+joblib.dump(model, model_path)
+joblib.dump(vectorizer, vectorizer_path)
 
-    with open(report_path, "w") as f:
-        f.write(classification_report(y_test, y_pred))
+with open(report_path, "w") as f:
+    f.write(classification_report(y_test, y_pred))
 
-    # log artifacts
-    mlflow.log_artifact(model_path)
-    mlflow.log_artifact(vectorizer_path)
-    mlflow.log_artifact(report_path)
+# log artifacts
+mlflow.log_artifact(model_path)
+mlflow.log_artifact(vectorizer_path)
+mlflow.log_artifact(report_path)
 
-    print("Training SUCCESS")
-    print("Accuracy:", acc)
+print("Training SUCCESS")
+print("Accuracy:", acc)
