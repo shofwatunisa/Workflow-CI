@@ -3,12 +3,12 @@ channels:
   - defaults
 dependencies:
   - python=3.12
-  - pip
   - pandas
   - scikit-learn
+  - mlflow
   - matplotlib
   - seaborn
   - joblib
-  - mlflow
+  - pip
   - pip:
       - dagshub
