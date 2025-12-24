@@ -13,34 +13,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout repo
+    # Checkout repository
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    # Setup Miniconda
+    # Setup Miniconda & create environment dari conda.yaml
     - name: Setup Miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
         environment-file: MLProject/conda.yaml
-        auto-activate-base: false
+        auto-activate-base: true
+        activate-environment: text_emotion_env
 
     # Debug: cek file & folder
     - name: List files
       run: ls -R
 
-    # Aktifkan environment
-    - name: Activate Conda environment
-      run: conda activate text_emotion_env
-
-    # Install MLflow (versi sesuai ketentuan)
-    - name: Install MLflow
-      run: pip install mlflow==2.19.0
-
-    # Jalankan MLflow Project
+    # Jalankan MLflow Project (environment sudah otomatis aktif)
     - name: Run MLflow Project
       run: |
         mlflow run MLProject \
-          -P dataset_path=MLProject/text_emotion_preprocessing/text_emotion_clean.csv
+          -P dataset_path=MLProject/namadataset_preprocessing/text_emotion_clean.csv
 
     # Upload MLflow artifacts
     - name: Upload MLflow artifacts
